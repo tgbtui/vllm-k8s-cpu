@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "filters": {
+    "privacy": {"()": "privacy_logging.PrivacyFilter"}
+  },
+  "formatters": {
+    "plain": {"format": "%(levelname)s %(asctime)s [%(name)s] %(message)s"}
+  },
+  "handlers": {
+    "stdout": {
+      "class": "logging.StreamHandler",
+      "formatter": "plain",
+      "filters": ["privacy"],
+      "level": "INFO",
+      "stream": "ext://sys.stdout"
+    }
+  },
+  "loggers": {
+    "vllm": {"handlers": ["stdout"], "level": "INFO", "propagate": false}
+  },
+  "root": {"handlers": ["stdout"], "level": "WARNING"}
+}

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-config
+  namespace: vllm
+data:
+  DTYPE: "bfloat16"            # safe default; try "bfloat16" (M4 has BF16) after the first successful run
+  MAX_MODEL_LEN: "2048"
+  MAX_NUM_SEQS: "4"
+  MAX_NUM_BATCHED_TOKENS: "1024"
+  VLLM_CPU_KVCACHE_SPACE: "1"
+  EXTRA_ARGS: "--enforce-eager"

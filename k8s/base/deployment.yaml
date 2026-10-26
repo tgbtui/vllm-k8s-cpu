@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: vllm
+spec:
+  replicas: 1
+  strategy: {type: Recreate}      # RWO PVC
+  selector:
+    matchLabels: {app: vllm}
+  template:
+    metadata:
+      labels: {app: vllm}
+    spec:
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001            # PVC writable by non-root
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: model-downloader   # first start: download to PVC; later starts: no-op, no network
+          image: vllm-downloader:0.1.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: vllm-config}
+          env:
+            - name: HF_TOKEN
+              valueFrom: {secretKeyRef: {name: vllm-secrets, key: HF_TOKEN}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: models, mountPath: /models}
+      containers:
+        - name: vllm
+          image: vllm-cpu:0.27.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - {name: http, containerPort: 8000}
+          envFrom:
+            - configMapRef: {name: vllm-config}
+          env:
+            - name: VLLM_API_KEY
+              valueFrom: {secretKeyRef: {name: vllm-secrets, key: VLLM_API_KEY}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: "4", memory: 8Gi}
+            limits: {memory: 12Gi}
+          startupProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            - {name: models, mountPath: /models, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+            - {name: shm, mountPath: /dev/shm}
+      volumes:
+        - name: models
+          persistentVolumeClaim: {claimName: model-cache}
+        - name: tmp
+          emptyDir: {}
+        - name: shm
+          emptyDir: {medium: Memory, sizeLimit: 2Gi}

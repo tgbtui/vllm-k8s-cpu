@@ -1,0 +1,20 @@
+# vLLM launch parameters. Edit and `kubectl rollout restart deploy/vllm -n vllm` - no image rebuild.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-config
+  namespace: vllm
+data:
+  MODEL_ID: "Qwen/Qwen2.5-1.5B-Instruct"
+  HF_REVISION: "main"
+  MODEL_DIR: "/models/Qwen2.5-1.5B-Instruct"
+  SERVED_MODEL_NAME: "qwen2.5-1.5b-instruct"
+  DTYPE: "bfloat16"            # use "float32" if the CPU lacks AVX512-BF16/AMX
+  QUANTIZATION: ""             # e.g. "compressed-tensors" for a pre-quantized INT8 model
+  MAX_MODEL_LEN: "4096"
+  MAX_NUM_SEQS: "16"
+  MAX_NUM_BATCHED_TOKENS: "2048"
+  ENABLE_PREFIX_CACHING: "false"
+  EXTRA_ARGS: ""
+  VLLM_CPU_KVCACHE_SPACE: "4"          # GiB for KV cache
+  VLLM_CPU_OMP_THREADS_BIND: "auto"

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: vllm
+spec:
+  template:
+    spec:
+      containers:
+        - name: vllm
+          resources:
+            requests: {cpu: "4", memory: 7Gi}
+            limits: {memory: 10Gi}
+          securityContext:
+            # per vLLM CPU docs for ARM: NUMA syscalls need SYS_NICE; seccomp must not block them
+            seccompProfile: {type: Unconfined}
+            capabilities:
+              drop: [ALL]
+              add: [SYS_NICE]
